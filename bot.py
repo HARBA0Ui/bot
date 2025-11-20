@@ -40,7 +40,7 @@ def send_to_discord(post):
                 "file": ("post_image.jpg", response.content, "image/jpeg")
             }
             payload = {
-                "content": f"**New Post from {post.owner_username}!** 📸\n{post.caption}\n\nhttps://www.instagram.com/p/{post.shortcode}/"
+                "content": f"**New Post from {post.owner_username}!** 📸\n\nhttps://www.instagram.com/p/{post.shortcode}/"
             }
             # Note: We use 'data' instead of 'json' when sending files
             requests.post(DISCORD_WEBHOOK_URL, data=payload, files=files)
