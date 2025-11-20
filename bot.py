@@ -27,17 +27,36 @@ def get_latest_post(username):
         return None
 
 def send_to_discord(post):
-    """Sends the post to Discord via Webhook."""
-    data = {
-        "content": f"**New Post from {post.owner_username}!** 📸\n{post.caption[:100]}...\n\nhttps://www.instagram.com/p/{post.shortcode}/"
-    }
-    result = requests.post(DISCORD_WEBHOOK_URL, json=data)
+    """Downloads the image and uploads it to Discord."""
     try:
-        result.raise_for_status()
-    except requests.exceptions.HTTPError as err:
-        print(f"Discord Webhook Error: {err}")
-    else:
-        print("Post sent to Discord successfully.")
+        # 1. Identify the image URL (uses display_url to ensure we get an image, even for videos)
+        image_url = post.url if not post.is_video else post.display_url
+        
+        # 2. Download the image
+        response = requests.get(image_url)
+        if response.status_code == 200:
+            # 3. Send to Discord as a file attachment
+            files = {
+                "file": ("post_image.jpg", response.content, "image/jpeg")
+            }
+            payload = {
+                "content": f"**New Post from {post.owner_username}!** 📸\n{post.caption}\n\nhttps://www.instagram.com/p/{post.shortcode}/"
+            }
+            # Note: We use 'data' instead of 'json' when sending files
+            requests.post(DISCORD_WEBHOOK_URL, data=payload, files=files)
+            print("Post sent with image attached.")
+        else:
+            print("Failed to download image. Status code:", response.status_code)
+            # Fallback: Send text only if image download fails
+            raise Exception("Image download failed")
+
+    except Exception as e:
+        print(f"Error sending image: {e}. Sending link only.")
+        # Fallback: Original text-only method
+        data = {
+            "content": f"**New Post from {post.owner_username}!** 📸\n{post.caption}\n\nhttps://www.instagram.com/p/{post.shortcode}/"
+        }
+        requests.post(DISCORD_WEBHOOK_URL, json=data)
 
 def main():
     # 1. Load previous state
