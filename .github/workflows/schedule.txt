@@ -1,0 +1,41 @@
+name: Instagram Bot
+
+on:
+  schedule:
+    # Runs every hour at minute 0. 
+    # Note: GitHub Actions schedule can sometimes be delayed by 10-20 mins in free tier.
+    - cron: '0 * * * *'
+  workflow_dispatch: # Allows manual triggering for testing
+
+jobs:
+  check-and-post:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write # Required to commit the JSON file back to the repo
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install instaloader requests
+
+      - name: Run Bot
+        env:
+          IG_USERNAME: ${{ secrets.IG_USERNAME }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: python bot.py
+
+      - name: Commit and Push changes
+        # Only commit if latest_post.json changed
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update latest post state [skip ci]"
+          file_pattern: latest_post.json
